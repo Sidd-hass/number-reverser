@@ -7,3 +7,4 @@
 # Egress for DNS has been restricted to the internal VPC CIDR.
 AVD-AWS-0104
 aws-vpc-no-public-egress-sgr
+
