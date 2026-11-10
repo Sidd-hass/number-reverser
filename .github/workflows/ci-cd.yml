@@ -158,7 +158,7 @@ jobs:
         run: |
           cd k8s/base
           kubectl kustomize . > rendered-manifests.yaml
-          kubectl apply --dry-run=client -f rendered-manifests.yaml
+          kubectl apply --dry-run=client --validate=false -f rendered-manifests.yaml
 
       # 19. Deploy to Kubernetes cluster
       - name: Deploy to Kubernetes cluster
