@@ -27,6 +27,7 @@ module "security" {
 
   project_name = local.project_name
   vpc_id       = module.networking.vpc_id
+  vpc_cidr     = var.vpc_cidr
   tags         = local.common_tags
 }
 

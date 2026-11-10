@@ -1,0 +1,13 @@
+# Trivy Misconfiguration Exception Policy
+# Rule: AVD-AWS-0104 (Unrestricted security group egress to 0.0.0.0/0 on ports 80 and 443)
+#
+# Justification:
+# Egress to 0.0.0.0/0 on ports 80/443 is strictly required for AWS Systems Manager (SSM) agent,
+# OS security patching (Ubuntu archive mirrors), and Docker Hub image registry pulls across dynamic CDNs.
+# Egress for DNS has been restricted to the internal VPC CIDR.
+#
+# Regulated Enterprise Transition:
+# In an enterprise production deployment with budget for VPC Endpoints and NAT gateways, this rule is
+# eliminated by deploying AWS PrivateLink endpoints and an outbound domain-filtering proxy.
+AVD-AWS-0104
+aws-vpc-no-public-egress-sgr

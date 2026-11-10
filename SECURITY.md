@@ -47,9 +47,13 @@ When running static analysis against the Terraform infrastructure, initial scans
 3. **Exposed Administrative Ports (SSH Port 22 / Kubernetes Port 6443)**
    - *Finding*: Standard tutorials open port 22 or 6443 to `0.0.0.0/0`, creating a continuous brute-force and credential stuffing surface.
    - *Remediation*: Completely removed Port 22 and 6443 ingress from `aws_security_group`. Access is managed exclusively through AWS Systems Manager (SSM) with IAM Session Manager, leaving zero management ports open to the public internet.
-4. **Outbound Traffic Egress Control**
-   - *Finding*: Overly broad outbound egress allows exfiltration if a container is compromised.
-   - *Remediation*: Restricted outbound security group rules to ports 80 (HTTP redirects), 443 (HTTPS updates/Docker pulls), and 53 (UDP/TCP DNS resolution).
+4. **Outbound Traffic Egress Control & Trivy AVD-AWS-0104 Finding**
+   - *Finding*: Trivy flagged `AVD-AWS-0104` (Critical) on all egress rules pointing to `0.0.0.0/0`.
+   - *Architectural Root Cause*: Scanners flag any rule opening outbound internet access. However, a single-node trial/free-tier host without costly NAT Gateways ($32/month) or AWS VPC Endpoints ($7/month each) must contact public CDN endpoints to pull Docker Hub images, fetch Ubuntu security patches, and communicate with the AWS Systems Manager (SSM) regional endpoint.
+   - *Professional DevSecOps Remediation (No `continue-on-error` bypass)*:
+     - **DNS (Port 53 UDP/TCP)**: Scoped egress strictly to the internal VPC CIDR (`var.vpc_cidr` / Amazon Route 53 VPC Resolver at `10.20.0.2`), completely removing `0.0.0.0/0` for DNS.
+     - **HTTPS / HTTP (Ports 443 and 80)**: Rather than disabling the scanner (`continue-on-error: true`), formal exception tracking was implemented using inline `# trivy:ignore:AVD-AWS-0104` comments with documented technical justifications and an audited `.trivyignore` policy file.
+     - **Regulated Production Transition**: In enterprise production, this exception is permanently closed by placing worker nodes in private subnets, establishing AWS PrivateLink interface endpoints for SSM/ECR, and routing internet-bound traffic through an egress proxy with strict FQDN/domain allowlisting.
 
 ### B. Container Image Scanning
 - **Base Image Audit**: Audited `python:3.13-slim` with Trivy.
