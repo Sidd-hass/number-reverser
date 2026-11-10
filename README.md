@@ -175,8 +175,20 @@ tail -f /var/log/user-data.log
 kubectl get nodes
 ```
 
-### 3. Deploy Kubernetes Workloads & Policies
+### 3. Deploy Kubernetes Workloads & Policies (via ArgoCD GitOps or Kustomize)
 From the EC2 instance (or your workstation targeting kubeconfig):
+
+**Option A — ArgoCD GitOps Sync (Recommended):**
+```bash
+# Register ArgoCD applications for continuous GitOps reconciliation
+kubectl apply -f argocd/policies-application.yaml
+kubectl apply -f argocd/application.yaml
+
+# Check ArgoCD sync status
+kubectl get applications -n argocd
+```
+
+**Option B — Direct Kustomize Apply:**
 ```bash
 # Apply Kyverno admission policies
 kubectl apply -k k8s/policies/
