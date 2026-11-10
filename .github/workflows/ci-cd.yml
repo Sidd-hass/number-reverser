@@ -1,0 +1,147 @@
+
+name: Number Reverser CI/CD
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  ci-cd:
+    name: Test, Scan, Build and Publish
+    runs-on: ubuntu-latest
+
+    env:
+      IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/number-reverser
+
+    steps:
+      # 1. Checkout source code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # 3. Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff
+
+      # 4. Python linting
+      - name: Python lint
+        run: ruff check app tests
+
+      # 5. Unit tests
+      - name: Run unit tests
+        run: python -m pytest -v
+
+      # 6. Calculate image version from Git tag
+      - name: Calculate image version
+        id: version
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            IMAGE_TAG="${GITHUB_REF_NAME#v}"
+          else
+            IMAGE_TAG="build-${GITHUB_RUN_NUMBER}"
+          fi
+
+          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+          echo "sha_tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+          echo "Image version: $IMAGE_TAG"
+
+      # 7. Terraform security scan
+      - name: Set up Trivy
+        uses: aquasecurity/setup-trivy@v0.2.6
+
+      - name: Scan Terraform configuration
+        run: |
+          trivy config \
+            --exit-code 1 \
+            --severity HIGH,CRITICAL \
+            ./infra
+
+      # 8. Build Docker image
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t $IMAGE_NAME:${{ steps.version.outputs.image_tag }} \
+            -t $IMAGE_NAME:${{ steps.version.outputs.sha_tag }} \
+            .
+
+      # 9. Scan Docker image
+      - name: Scan Docker image with Trivy
+        run: |
+          trivy image \
+            --exit-code 1 \
+            --severity CRITICAL \
+            $IMAGE_NAME:${{ steps.version.outputs.image_tag }}
+
+      # 10. Generate SBOM
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.image_tag }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+          upload-artifact: false
+
+      # 11. Publish SBOM as build artifact
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: number-reverser-sbom
+          path: sbom.spdx.json
+          if-no-files-found: error
+          retention-days: 30
+
+      # 12. Log in to Docker Hub
+      - name: Log in to Docker Hub
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 13. Push versioned image
+      - name: Push image to Docker Hub
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          docker push $IMAGE_NAME:${{ steps.version.outputs.image_tag }}
+          docker push $IMAGE_NAME:${{ steps.version.outputs.sha_tag }}
+
+      # 14. Install Cosign
+      - name: Install Cosign
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: sigstore/cosign-installer@v3.9.0
+
+      # 15. Sign image using GitHub OIDC
+      - name: Sign Docker image
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          cosign sign --yes \
+            $IMAGE_NAME:${{ steps.version.outputs.image_tag }}
+
+      # 16. Verify signature
+      - name: Verify image signature
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          cosign verify \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp "^https://github.com/${GITHUB_REPOSITORY}/.github/workflows/ci-cd.yml@.*" \
+            $IMAGE_NAME:${{ steps.version.outputs.image_tag }}
