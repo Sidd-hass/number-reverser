@@ -3,3 +3,17 @@ __pycache__/
 .pytest_cache/
 *.pyc
 .env
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+
+# Terraform variable examples are safe to commit
+!*.tfvars.example
+!*.auto.tfvars.example
