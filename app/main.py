@@ -70,7 +70,7 @@ def reverse(payload: ReverseRequest):
     }
 
 
-HTML_PAGE = """
+HTML_PAGE = r"""
 <!DOCTYPE html>
 <html>
 <head>

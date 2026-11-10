@@ -2,7 +2,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app, reverse_number, INT64_MAX, INT64_MIN
+from app.main import INT64_MAX, INT64_MIN, app, reverse_number
 
 client = TestClient(app)
 
