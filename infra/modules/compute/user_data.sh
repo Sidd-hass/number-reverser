@@ -23,7 +23,12 @@ done
 echo "Installing Kyverno policy engine..."
 /usr/local/bin/kubectl create -f https://github.com/kyverno/kyverno/releases/download/v1.12.5/install.yaml || true
 
-# 5. Export kubeconfig for ubuntu user
+# 5. Install ArgoCD
+echo "Installing ArgoCD..."
+/usr/local/bin/kubectl create namespace argocd || true
+/usr/local/bin/kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml || true
+
+# 6. Export kubeconfig for ubuntu user
 mkdir -p /home/ubuntu/.kube
 cp /etc/rancher/k3s/k3s.yaml /home/ubuntu/.kube/config
 chown -R ubuntu:ubuntu /home/ubuntu/.kube
