@@ -1,0 +1,36 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: number-reverser-netpol
+  namespace: number-reverser
+  labels:
+    app.kubernetes.io/name: number-reverser
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: number-reverser
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    # Allow ingress on port 8000 from ingress controller or other services within cluster
+    - from:
+        - namespaceSelector: {}
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 8000
+
+  egress:
+    # Restrict egress strictly to DNS queries (kube-system coredns)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+

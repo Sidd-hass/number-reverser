@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: number-reverser
+
+resources:
+  - namespace.yaml
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+  - networkpolicy.yaml
+
+images:
+  - name: docker.io/library/number-reverser
+    newName: docker.io/library/number-reverser
+    newTag: 1.0.0
+

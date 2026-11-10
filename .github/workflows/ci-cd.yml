@@ -70,7 +70,6 @@ jobs:
         uses: aquasecurity/setup-trivy@v0.2.6
 
       - name: Scan Terraform configuration
-        continue-on-error: true
         run: |
           trivy config \
             --exit-code 1 \
@@ -146,3 +145,34 @@ jobs:
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             --certificate-identity-regexp "^https://github.com/${GITHUB_REPOSITORY}/.github/workflows/ci-cd.yml@.*" \
             $IMAGE_NAME:${{ steps.version.outputs.image_tag }}
+
+      # 17. Set up Kubectl
+      - name: Set up Kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: "latest"
+
+      # 18. Render and validate Kubernetes manifests
+      - name: Render and validate Kubernetes manifests
+        run: |
+          cd k8s/base
+          kubectl kustomize . > rendered-manifests.yaml
+          kubectl apply --dry-run=client -f rendered-manifests.yaml
+
+      # 19. Deploy to Kubernetes cluster
+      - name: Deploy to Kubernetes cluster
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG }}
+        run: |
+          if [ -n "$KUBECONFIG_DATA" ]; then
+            echo "KUBECONFIG secret detected. Deploying to target cluster..."
+            mkdir -p ~/.kube
+            echo "$KUBECONFIG_DATA" | base64 -d > ~/.kube/config
+            chmod 600 ~/.kube/config
+            kubectl apply -f k8s/base/rendered-manifests.yaml
+            kubectl rollout status deployment/number-reverser -n number-reverser --timeout=120s
+          else
+            echo "Notice: KUBECONFIG secret not configured in repository secrets. Verified client deployment dry-run successfully."
+          fi
+

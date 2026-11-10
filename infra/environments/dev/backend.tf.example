@@ -1,0 +1,18 @@
+# Standard Production Remote Backend Configuration
+# ------------------------------------------------
+# In a multi-tenant regulated environment, Terraform state MUST be stored in an encrypted
+# remote backend with state locking and versioning enabled.
+#
+# To enable S3 backend with DynamoDB locking, copy this file to backend.tf and provide
+# your state bucket and DynamoDB table names:
+#
+# terraform {
+#   backend "s3" {
+#     bucket         = "number-reverser-terraform-state-<ACCOUNT_ID>"
+#     key            = "dev/terraform.tfstate"
+#     region         = "ap-south-1"
+#     dynamodb_table = "number-reverser-tf-locks"
+#     encrypt        = true
+#   }
+# }
+

@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: number-reverser
+  namespace: number-reverser
+  labels:
+    app.kubernetes.io/name: number-reverser
+  annotations:
+    ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: number-reverser
+                port:
+                  number: 80
+
