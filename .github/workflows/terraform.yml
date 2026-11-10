@@ -1,0 +1,67 @@
+
+name: Terraform Infrastructure CI
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "infra/**"
+      - ".github/workflows/terraform.yml"
+
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "infra/**"
+      - ".github/workflows/terraform.yml"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: Terraform Validate and Security Scan
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # 1. Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Install Terraform
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.17.0"
+
+      # 3. Check Terraform formatting
+      - name: Terraform Format
+        run: terraform fmt -check -recursive infra
+
+      # 4. Initialize Terraform without remote backend
+      - name: Terraform Init
+        run: terraform -chdir=infra/environments/dev init -backend=false -input=false
+
+      # 5. Validate Terraform configuration
+      - name: Terraform Validate
+        run: terraform -chdir=infra/environments/dev validate
+
+      # 6. Install Trivy
+      - name: Set up Trivy
+        uses: aquasecurity/setup-trivy@v0.2.6
+
+      # 7. Scan Terraform configuration
+      - name: Trivy Terraform Security Scan
+        continue-on-error: true
+        run: |
+          trivy config \
+            --exit-code 1 \
+            --severity HIGH,CRITICAL \
+            ./infra
