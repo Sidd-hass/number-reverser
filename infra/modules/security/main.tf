@@ -1,4 +1,4 @@
-﻿resource "aws_security_group" "ec2" {
+resource "aws_security_group" "ec2" {
   name        = "${var.project_name}-ec2-sg"
   description = "Security group for the Number Reverser k3s EC2 instance."
   vpc_id      = var.vpc_id
