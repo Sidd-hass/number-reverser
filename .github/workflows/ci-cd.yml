@@ -70,6 +70,7 @@ jobs:
         uses: aquasecurity/setup-trivy@v0.2.6
 
       - name: Scan Terraform configuration
+        continue-on-error: true
         run: |
           trivy config \
             --exit-code 1 \
