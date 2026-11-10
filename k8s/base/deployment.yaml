@@ -31,7 +31,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: app
-          image: docker.io/library/number-reverser:1.0.0
+          image: docker.io/sidd24/number-reverser:1.0.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

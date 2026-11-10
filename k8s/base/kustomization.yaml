@@ -11,7 +11,7 @@ resources:
   - networkpolicy.yaml
 
 images:
-  - name: docker.io/library/number-reverser
-    newName: docker.io/library/number-reverser
+  - name: docker.io/sidd24/number-reverser
+    newName: docker.io/sidd24/number-reverser
     newTag: 1.0.0
 
