@@ -185,3 +185,4 @@ aws ec2 describe-vpcs --region ap-south-1 --filters "Name=tag:Project,Values=num
 aws iam list-roles --query "Roles[?RoleName=='number-reverser-ec2-role'].RoleName" --output text
 ```
 *All 4 commands should return empty, confirming zero active resources and zero continuing spend.*
+
